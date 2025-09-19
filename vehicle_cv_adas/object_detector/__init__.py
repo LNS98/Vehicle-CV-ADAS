@@ -1,3 +1,3 @@
-from ObjectDetector.yoloDetector import YoloDetector
-from ObjectDetector.efficientdetDetector import EfficientdetDetector
-from ObjectTracker.core import putText_shadow
+from .yoloDetector import YoloDetector
+from .efficientdetDetector import EfficientdetDetector
+from ..object_tracker.core import putText_shadow

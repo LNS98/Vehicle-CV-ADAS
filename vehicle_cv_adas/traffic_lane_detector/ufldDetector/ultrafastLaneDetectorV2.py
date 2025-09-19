@@ -4,13 +4,13 @@ from typing import Tuple
 try :
 	from ufldDetector.utils import LaneModelType, OffsetType, lane_colors
 	from TrafficLaneDetector.ufldDetector.core import LaneDetectBase
-	from coreEngine import TensorRTEngine, OnnxEngine
+	from ...core_engine import TensorRTEngine, OnnxEngine
 except :
 	import sys
 	from .utils import LaneModelType, OffsetType, lane_colors
 	from .core import LaneDetectBase
 	sys.path.append("..")
-	from coreEngine import TensorRTEngine, OnnxEngine
+	from ...core_engine import TensorRTEngine, OnnxEngine
 
 def _softmax(x) :
 	# Note : 防止 overflow and underflow problem

@@ -1,2 +1,2 @@
-from TrafficLaneDetector.ufldDetector.ultrafastLaneDetector import UltrafastLaneDetector
-from TrafficLaneDetector.ufldDetector.ultrafastLaneDetectorV2 import UltrafastLaneDetectorV2
+from .ufldDetector.ultrafastLaneDetector import UltrafastLaneDetector
+from .ufldDetector.ultrafastLaneDetectorV2 import UltrafastLaneDetectorV2

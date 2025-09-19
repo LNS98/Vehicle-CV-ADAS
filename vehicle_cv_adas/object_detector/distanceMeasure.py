@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
 import typing  
-from ObjectDetector.core import RectInfo
-from ObjectTracker.core import putText_shadow
+from .core import RectInfo
+from ..object_tracker.core import putText_shadow
 
 class SingleCamDistanceMeasure(object):
 	# 1 cm = 0.39 inch, original size h x w 
