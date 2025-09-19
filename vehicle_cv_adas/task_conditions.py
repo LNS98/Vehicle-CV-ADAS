@@ -1,8 +1,8 @@
 import numpy as np
 import logging
 import ctypes
-from ObjectDetector.utils import CollisionType
-from TrafficLaneDetector.ufldDetector.utils import OffsetType, CurvatureType
+from .object_detector.utils import CollisionType
+from .traffic_lane_detector.ufldDetector.utils import OffsetType, CurvatureType
 
 STD_OUTPUT_HANDLE = -11
 std_out_handle = False  # ctypes.windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
