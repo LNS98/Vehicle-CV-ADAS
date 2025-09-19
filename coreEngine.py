@@ -55,12 +55,13 @@ class TensorRTBase():
 			engine = runtime.deserialize_cuda_engine(f.read())
 
 		self.context =  self._create_context(engine)
-		self.dtype = trt.nptype(engine.get_binding_dtype(0)) 
+		self.dtype = trt.nptype(engine.get_tensor_dtype(engine.get_tensor_name(0))) 
 		self.host_inputs, self.cuda_inputs, self.host_outputs, self.cuda_outputs, self.bindings = self._allocate_buffers(engine)
 
 		# Store
 		self.stream = stream
 		self.engine = engine
+
 
 	def _allocate_buffers(self, engine):
 		"""Allocates all host/device in/out buffers required for an engine."""
@@ -70,16 +71,18 @@ class TensorRTBase():
 		cuda_outputs = []
 		bindings = []
 
-		for binding in engine:
-			size = trt.volume(engine.get_binding_shape(binding)) * engine.max_batch_size
-			dtype = trt.nptype(engine.get_binding_dtype(binding))
+		for i in range(engine.num_io_tensors):
+			tensor_name = engine.get_tensor_name(i)
+			tensor_shape = engine.get_tensor_shape(tensor_name)
+			size = trt.volume(tensor_shape)  # Shape already includes batch size
+			dtype = trt.nptype(engine.get_tensor_dtype(tensor_name))
 			# Allocate host and device buffers
 			host_mem = cuda.pagelocked_empty(size, dtype)
 			cuda_mem = cuda.mem_alloc(host_mem.nbytes)
 			# Append the device buffer to device bindings.
 			bindings.append(int(cuda_mem))
 			# Append to the appropriate list.
-			if engine.binding_is_input(binding):
+			if engine.get_tensor_mode(tensor_name) == trt.TensorIOMode.INPUT:
 				host_inputs.append(host_mem)
 				cuda_inputs.append(cuda_mem)
 			else:
@@ -105,8 +108,19 @@ class TensorRTBase():
 		np.copyto(host_inputs[0], input_tensor.ravel())
 		# Transfer input data  to the GPU.
 		cuda.memcpy_htod_async(cuda_inputs[0], host_inputs[0], stream)
-		# Run inference.
-		context.execute_async_v2(bindings=bindings, stream_handle=stream.handle)
+		# Run inference with modern TensorRT API
+		# Set tensor addresses for inputs and outputs
+		for i in range(len(cuda_inputs)):
+			input_name = engine.get_tensor_name(i)
+			context.set_tensor_address(input_name, cuda_inputs[i])
+		
+		for i in range(len(cuda_outputs)):
+			output_idx = len(cuda_inputs) + i  
+			output_name = engine.get_tensor_name(output_idx)
+			context.set_tensor_address(output_name, cuda_outputs[i])
+		
+		# Execute with modern API
+		context.execute_async_v3(stream_handle=stream.handle)
 		# Transfer predictions back from the GPU.
 		for host_output, cuda_output in zip(host_outputs, cuda_outputs) :
 			cuda.memcpy_dtoh_async(host_output, cuda_output, stream)
@@ -126,20 +140,21 @@ class TensorRTEngine(EngineBase, TensorRTBase):
 		self.__load_engine_interface()
 
 	def __load_engine_interface(self):
-		# Get the number of bindings
-		num_bindings = self.engine.num_bindings
+		# Get the number of tensors
+		num_tensors = self.engine.num_io_tensors
 
 		self.__input_shape = []
 		self.__input_names = []
 		self.__output_names = []
 		self.__output_shapes = []
-		for i in range(num_bindings):
-			if self.engine.binding_is_input(i):
-				self.__input_shape.append(self.engine.get_binding_shape(i))
-				self.__input_names.append(self.engine.get_binding_name(i))
+		for i in range(num_tensors):
+			tensor_name = self.engine.get_tensor_name(i)
+			if self.engine.get_tensor_mode(tensor_name) == trt.TensorIOMode.INPUT:
+				self.__input_shape.append(self.engine.get_tensor_shape(tensor_name))
+				self.__input_names.append(tensor_name)
 				continue
-			self.__output_names.append(self.engine.get_binding_name(i))
-			self.__output_shapes.append(self.engine.get_binding_shape(i))
+			self.__output_names.append(tensor_name)
+			self.__output_shapes.append(self.engine.get_tensor_shape(tensor_name))
 
 	def get_engine_input_shape(self):
 		return self.__input_shape[0]
