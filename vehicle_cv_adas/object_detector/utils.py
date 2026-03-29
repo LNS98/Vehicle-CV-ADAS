@@ -90,7 +90,7 @@ class Scaler(object):
 		if not isinstance(kpss, np.ndarray):
 			kpss = np.array(kpss)
 
-		if (kpss != []) :
+		if kpss.size > 0:
 			ratioh, ratiow = self.get_scale_ratio()
 			padh, padw = self._pad_shape
 			kpss = np.vstack(kpss)

@@ -13,7 +13,7 @@ try :
 except :
 	from .utils import ObjectModelType, hex_to_rgb, NMS, Scaler
 	from .core import ObjectDetectBase, RectInfo
-	from coreEngine import TensorRTEngine, OnnxEngine
+	from ..core_engine import TensorRTEngine, OnnxEngine
 
 class YoloLiteParameters():
 	def __init__(self, model_type, input_shape, num_classes):
